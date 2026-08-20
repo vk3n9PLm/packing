@@ -214,10 +214,11 @@
   <div class="sheet" id="sheet">
     <div class="grabber"></div>
     <h3>Menu</h3>
-    <p class="hint">Choose which optional tabs to show, or check/clear everything at once.</p>
+    <p class="hint">Start a new trip, choose which optional tabs to show, or check/clear everything.</p>
+    <button class="sheet-btn primary" id="newTrip">🧳 Start new trip</button>
     <button class="sheet-btn" id="chooseSections">⚙︎ Choose sections for this trip</button>
-    <button class="sheet-btn primary" id="checkAll">✓ Check everything</button>
-    <button class="sheet-btn danger reset" id="resetAll">↺ Uncheck everything (reset)</button>
+    <button class="sheet-btn" id="checkAll">✓ Check everything</button>
+    <button class="sheet-btn danger reset" id="resetAll">↺ Uncheck everything</button>
     <button class="sheet-btn" id="closeSheet">Cancel</button>
   </div>
 
@@ -239,7 +240,12 @@ const DATA = [
       {label:"Miscellaneous", items:["Nike bag","Eight Sleep pillow","Electric shaver","Cash pouch for tips (five 5s, 10s, 20s, 100s)"]}
     ]},
   { id:"clothes", name:"Clothes",
-    items:["Underwear","Socks","T-shirts","Polo shirts","Dress shirts","Jeans","Belt","Shorts","Gym clothes","Athletic shoes","Hiking boots","Sleepwear"] },
+    groups:[
+      {label:"Basics", items:["Underwear","Socks","Sleepwear"]},
+      {label:"Tops", items:["T-shirts","Polo shirts","Dress shirts"]},
+      {label:"Bottoms", items:["Jeans and belt","Shorts"]},
+      {label:"Active", items:["Gym clothes","Athletic shoes","Hiking boots"]}
+    ]},
   { id:"formal", name:"Formal", optional:true,
     items:["Suit","Tie","Dress shoes and socks","Khakis","Cuff links"] },
   { id:"hot", name:"Hot weather", optional:true,
@@ -251,12 +257,9 @@ const DATA = [
     ]},
   { id:"ski", name:"Ski", optional:true,
     items:["Ski jacket","Ski pants","Base layer","Dark blue Theory sweater","Wool socks","Hestra gloves","Goggles with detachable gaiter","iPhone tether","Protective gear (top, shorts, knee pads, wrist guards)"] },
-  { id:"remote", name:"Remote work", groupsFirst:true,
-    groups:[
-      {label:"If red-eye", items:["Disposable toothbrush & toothpaste for departure airport before takeoff"]}
-    ],
-    items:["MacBook ranger (plus headphones)","NetGear wireless thing"] },
-  { id:"ryan", name:"Ryan",
+  { id:"remote", name:"Remote work",
+    items:["MacBook ranger (plus headphones)","NetGear wireless thing","If red-eye: disposable toothbrush and toothpaste for departure airport before takeoff"] },
+  { id:"ryan", name:"Ryan", optional:true,
     items:["iPad with downloads","Ryan's headphones with adapter"] },
   { id:"toiletry", name:"Toiletry Bag",
     groups:[
@@ -436,6 +439,14 @@ function closeSetup(){
 setupScrim.onclick=closeSetup;
 document.getElementById("setupDone").onclick=closeSetup;
 document.getElementById("chooseSections").onclick=()=>{ closeSheet(); openSetup(); };
+document.getElementById("newTrip").onclick=()=>{
+  checked={}; save(); updateHeader(); closeSheet(); openSetup();
+};
+
+/* ============ AUTO-UPDATE ============ */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+}
 
 /* ============ INIT ============ */
 renderTabs();renderMain(false);updateHeader();
