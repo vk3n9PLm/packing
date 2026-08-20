@@ -167,6 +167,25 @@
   .sheet-btn.danger.reset{background:#fdeaea;color:#d23b3b;}
   @media (prefers-color-scheme: dark){.sheet-btn.danger.reset{background:#341a1a;color:#ff6b6b;}}
 
+  /* setup toggle rows */
+  #setupRows{margin:2px 4px 14px;}
+  .toggle-row{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:15px 2px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;
+  }
+  .toggle-row:last-child{border-bottom:none;}
+  .trow-name{font-size:16px;font-weight:600;}
+  .switch{
+    width:52px;height:32px;border-radius:99px;background:var(--surface-2);
+    position:relative;flex:0 0 auto;transition:background .2s;
+  }
+  .switch::after{
+    content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s;
+  }
+  .toggle-row.on .switch{background:var(--done);}
+  .toggle-row.on .switch::after{transform:translateX(20px);}
+
   /* subtle fade-in when switching sections */
   main.switching{animation:fade .22s ease;}
   @keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
@@ -194,48 +213,61 @@
   <div class="scrim" id="scrim"></div>
   <div class="sheet" id="sheet">
     <div class="grabber"></div>
-    <h3>Whole list</h3>
-    <p class="hint">Check or clear every item across all sections at once.</p>
+    <h3>Menu</h3>
+    <p class="hint">Choose which optional tabs to show, or check/clear everything at once.</p>
+    <button class="sheet-btn" id="chooseSections">⚙︎ Choose sections for this trip</button>
     <button class="sheet-btn primary" id="checkAll">✓ Check everything</button>
     <button class="sheet-btn danger reset" id="resetAll">↺ Uncheck everything (reset)</button>
     <button class="sheet-btn" id="closeSheet">Cancel</button>
+  </div>
+
+  <div class="scrim" id="setupScrim"></div>
+  <div class="sheet" id="setup">
+    <div class="grabber"></div>
+    <h3>Which sections do you need?</h3>
+    <p class="hint">Turn on the optional tabs for this trip. You can change this anytime from the menu (⋯).</p>
+    <div id="setupRows"></div>
+    <button class="sheet-btn primary" id="setupDone">Done</button>
   </div>
 
 <script>
 /* ============ DATA ============ */
 const DATA = [
   { id:"important", name:"Important",
-    items:["Passport","Tourist visa"] },
+    items:["Passport","Tourist visa"],
+    groups:[
+      {label:"Miscellaneous", items:["Nike bag","Eight Sleep pillow","Electric shaver","Cash pouch for tips (five 5s, 10s, 20s, 100s)"]}
+    ]},
   { id:"clothes", name:"Clothes",
     items:["Underwear","Socks","T-shirts","Polo shirts","Dress shirts","Jeans","Belt","Shorts","Gym clothes","Athletic shoes","Hiking boots","Sleepwear"] },
-  { id:"misc", name:"Miscellaneous",
-    items:["Nike bag","Eight Sleep pillow","Electric shaver","Cash pouch for tips (five 5s, 10s, 20s, 100s)"] },
-  { id:"formal", name:"Formal",
-    items:["Suit","Tie","Dress shoes and socks","Khakis"] },
-  { id:"hot", name:"Hot weather",
+  { id:"formal", name:"Formal", optional:true,
+    items:["Suit","Tie","Dress shoes and socks","Khakis","Cuff links"] },
+  { id:"hot", name:"Hot weather", optional:true,
     items:["Sandals","Goodr sunglasses","Cap","Bathing suit","Goggles"] },
-  { id:"cool", name:"Cool weather",
-    items:["Sweaters and V neck undershirts","Barbour raincoat","Nike light raincoat"] },
-  { id:"cold", name:"Cold weather",
-    items:["Canada Goose","Hugo Boss jacket","Snow boots / snow sneakers","Winter hat","Gloves"] },
-  { id:"ski", name:"Ski",
+  { id:"coolcold", name:"Cool & Cold", optional:true,
+    groups:[
+      {label:"Cool weather", items:["Sweaters and V neck undershirts","Barbour raincoat","Nike light raincoat"]},
+      {label:"Cold weather", items:["Canada Goose","Hugo Boss jacket","Snow boots / snow sneakers","Winter hat","Gloves"]}
+    ]},
+  { id:"ski", name:"Ski", optional:true,
     items:["Ski jacket","Ski pants","Base layer","Dark blue Theory sweater","Wool socks","Hestra gloves","Goggles with detachable gaiter","iPhone tether","Protective gear (top, shorts, knee pads, wrist guards)"] },
+  { id:"remote", name:"Remote work", groupsFirst:true,
+    groups:[
+      {label:"If red-eye", items:["Disposable toothbrush & toothpaste for departure airport before takeoff"]}
+    ],
+    items:["MacBook ranger (plus headphones)","NetGear wireless thing"] },
+  { id:"ryan", name:"Ryan",
+    items:["iPad with downloads","Ryan's headphones with adapter"] },
   { id:"toiletry", name:"Toiletry Bag",
-    note:{text:"Bellroy toiletry bag.",warn:false},
     groups:[
       {label:"Non-liquids", items:["Toothbrush","Floss picks","TePe","Small pill box with daily meds","Nail clippers","Contact lenses","Fiber","Zicam"]},
-      {label:"Liquids", items:["zBiotics","Deodorant","Toothpaste","Face sunscreen","Eye drops","CeraVe acne cleanser (in the GoToob)","Tretinoin","CeraVe night time moisturizer"]},
-      {label:"If red-eye", items:["Disposable toothbrush & toothpaste for departure airport before takeoff"]}
+      {label:"Liquids", items:["zBiotics","Deodorant","Toothpaste","Face sunscreen","Eye drops","CeraVe acne cleanser (in the GoToob)","Tretinoin","CeraVe night time moisturizer"]}
     ]},
   { id:"backpack", name:"Tumi Backpack",
     items:["Laptop","Kindle","Blue poofy jacket for airplane","Large pill box with misc meds","Halls","Voltage adapter"],
     groups:[
       {label:"Travel kit", items:["100W charger (laptop, iPad, iPhone)","Headphones with adapter","Headphone splitter","Ear plugs","Eye mask","Lip balm"]}
     ]},
-  { id:"sometimes", name:"Sometimes",
-    items:["MacBook ranger (plus headphones)","NetGear wireless thing","Citi AA or Delta Amex for lounge"] },
-  { id:"ryan", name:"Ryan",
-    items:["iPad with downloads","Ryan's headphones with adapter"] },
 ];
 
 /* ============ STATE ============ */
@@ -245,6 +277,17 @@ try { checked = JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch(e){ c
 let activeSection = DATA[0].id;
 
 function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(checked)); }catch(e){} }
+
+/* optional-section visibility (trip setup) */
+const OPT_KEY = "packingSections_v1";
+const OPTIONALS = DATA.filter(s=>s.optional).map(s=>s.id);
+let enabled=null, firstRun=false;
+try{ enabled = JSON.parse(localStorage.getItem(OPT_KEY)); }catch(e){ enabled=null; }
+if(!enabled || typeof enabled!=="object"){ enabled={}; OPTIONALS.forEach(id=>enabled[id]=true); firstRun=true; }
+else { OPTIONALS.forEach(id=>{ if(!(id in enabled)) enabled[id]=true; }); }
+function saveEnabled(){ try{ localStorage.setItem(OPT_KEY, JSON.stringify(enabled)); }catch(e){} }
+function isVisible(sec){ return sec && (!sec.optional || enabled[sec.id]); }
+function visibleSections(){ return DATA.filter(isVisible); }
 
 /* build flat id list per section */
 function sectionItemIds(sec){
@@ -260,7 +303,7 @@ function sectionProgress(sec){
 }
 function overallProgress(){
   let done=0,total=0;
-  DATA.forEach(s=>{const p=sectionProgress(s);done+=p.done;total+=p.total;});
+  visibleSections().forEach(s=>{const p=sectionProgress(s);done+=p.done;total+=p.total;});
   return {done,total};
 }
 
@@ -270,7 +313,7 @@ const mainEl = document.getElementById("main");
 
 function renderTabs(){
   tabsEl.innerHTML="";
-  DATA.forEach(sec=>{
+  visibleSections().forEach(sec=>{
     const p=sectionProgress(sec);
     const b=document.createElement("button");
     b.className="tab"+(sec.id===activeSection?" active":"")+(p.total>0&&p.done===p.total?" done":"");
@@ -325,18 +368,23 @@ function renderMain(animate){
     mainEl.appendChild(n);
   }
 
-  if(sec.items && sec.items.length){
-    const ul=document.createElement("ul");ul.className="items";
-    sec.items.forEach((t,i)=>ul.appendChild(itemLi(sec.id+"-i"+i,t)));
-    mainEl.appendChild(ul);
-  }
-  (sec.groups||[]).forEach((g,gi)=>{
-    const gl=document.createElement("div");gl.className="group-label";gl.textContent=g.label;
-    mainEl.appendChild(gl);
-    const ul=document.createElement("ul");ul.className="items";
-    g.items.forEach((t,i)=>ul.appendChild(itemLi(sec.id+"-g"+gi+"-"+i,t)));
-    mainEl.appendChild(ul);
-  });
+  const renderItems=()=>{
+    if(sec.items && sec.items.length){
+      const ul=document.createElement("ul");ul.className="items";
+      sec.items.forEach((t,i)=>ul.appendChild(itemLi(sec.id+"-i"+i,t)));
+      mainEl.appendChild(ul);
+    }
+  };
+  const renderGroups=()=>{
+    (sec.groups||[]).forEach((g,gi)=>{
+      const gl=document.createElement("div");gl.className="group-label";gl.textContent=g.label;
+      mainEl.appendChild(gl);
+      const ul=document.createElement("ul");ul.className="items";
+      g.items.forEach((t,i)=>ul.appendChild(itemLi(sec.id+"-g"+gi+"-"+i,t)));
+      mainEl.appendChild(ul);
+    });
+  };
+  if(sec.groupsFirst){ renderGroups(); renderItems(); } else { renderItems(); renderGroups(); }
 }
 
 function updateHeader(){
@@ -360,15 +408,38 @@ document.getElementById("menuBtn").onclick=openSheet;
 document.getElementById("closeSheet").onclick=closeSheet;
 scrim.onclick=closeSheet;
 document.getElementById("checkAll").onclick=()=>{
-  DATA.forEach(s=>sectionItemIds(s).forEach(id=>checked[id]=true));
+  visibleSections().forEach(s=>sectionItemIds(s).forEach(id=>checked[id]=true));
   save();renderTabs();renderMain(false);updateHeader();closeSheet();
 };
 document.getElementById("resetAll").onclick=()=>{
   checked={};save();renderTabs();renderMain(false);updateHeader();closeSheet();
 };
 
+/* ============ SETUP (choose sections) ============ */
+const setupScrim=document.getElementById("setupScrim"), setupEl=document.getElementById("setup");
+function buildSetupRows(){
+  const c=document.getElementById("setupRows"); c.innerHTML="";
+  DATA.filter(s=>s.optional).forEach(s=>{
+    const row=document.createElement("div");
+    row.className="toggle-row"+(enabled[s.id]?" on":"");
+    row.innerHTML=`<span class="trow-name">${s.name}</span><span class="switch"></span>`;
+    row.onclick=()=>{ enabled[s.id]=!enabled[s.id]; row.classList.toggle("on"); saveEnabled(); };
+    c.appendChild(row);
+  });
+}
+function openSetup(){ buildSetupRows(); setupScrim.classList.add("open"); setupEl.classList.add("open"); }
+function closeSetup(){
+  setupScrim.classList.remove("open"); setupEl.classList.remove("open");
+  if(!isVisible(DATA.find(s=>s.id===activeSection))){ const v=visibleSections()[0]; activeSection=v?v.id:null; }
+  renderTabs(); renderMain(false); updateHeader();
+}
+setupScrim.onclick=closeSetup;
+document.getElementById("setupDone").onclick=closeSetup;
+document.getElementById("chooseSections").onclick=()=>{ closeSheet(); openSetup(); };
+
 /* ============ INIT ============ */
 renderTabs();renderMain(false);updateHeader();
+if(firstRun){ saveEnabled(); openSetup(); }
 </script>
 </body>
 </html>
